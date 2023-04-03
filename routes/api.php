@@ -14,8 +14,8 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth:sanctum')->group(function (){
-  Route::get('owner/properties', [\App\Http\Controllers\Owner\PropertyController::class, 'index'])->name('properties.index');
-  Route::get('user/bookings', [\App\Http\Controllers\User\BookingController::class, 'index'])->name('bookings.index');
+  Route::apiResource('owner/properties', \App\Http\Controllers\Owner\PropertyController::class);
+  Route::apiResource('user/bookings', \App\Http\Controllers\User\BookingController::class);
 });
 
 Route::post('auth/register', App\Http\Controllers\Auth\RegisterController::class)->name('register');

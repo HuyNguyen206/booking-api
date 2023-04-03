@@ -28,4 +28,9 @@ class PropertiesTest extends TestCase
 
         $this->actingAs($user)->getJson(route('properties.index'))->assertForbidden();
     }
+
+    public function test_property_owner_can_add_property()
+    {
+
+    }
 }

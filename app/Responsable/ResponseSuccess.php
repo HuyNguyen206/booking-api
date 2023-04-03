@@ -20,5 +20,4 @@ class ResponseSuccess implements Responsable
 
         return response()->json($response, $this->statusCode);
     }
-
 }

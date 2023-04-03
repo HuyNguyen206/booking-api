@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Role;
 use App\Models\User;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AuthTest extends TestCase

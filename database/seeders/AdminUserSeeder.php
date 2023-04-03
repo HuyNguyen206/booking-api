@@ -16,7 +16,6 @@ class AdminUserSeeder extends Seeder
         User::factory()->create([
             'name' => 'admin',
             'email' => 'admin@booking.com',
-            'role_id' => Role::where('name', 'Administrator')->first()->id
-        ]);
+        ])->assignRole('Administrator');
     }
 }

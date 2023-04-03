@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\Role;
 use App\Models\User;
 use App\Responsable\ResponseSuccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Spatie\Permission\Models\Role;
 
 class RegisterController extends Controller
 {
@@ -25,7 +25,8 @@ class RegisterController extends Controller
         /**
          * @var User $user
          */
-        $user = User::create(Arr::except($data, ['password', 'password_confirmation']) + ['password' => bcrypt($data['password'])]);
+        $user = User::create(Arr::except($data, ['password', 'password_confirmation', 'role_id']) + ['password' => bcrypt($data['password'])]);
+        $user->assignRole($data['role_id']);
 
         return new ResponseSuccess([
             'access_token' => $user->createToken('client')->plainTextToken

@@ -14,7 +14,7 @@ class RoleSeeder extends Seeder
     {
         $roles = ['Administrator', 'Property Owner', 'Simple User'];
         collect($roles)->each(function ($role){
-            Role::create([
+            Role::query()->firstOrcreate([
                 'name' => $role
             ]);
         });

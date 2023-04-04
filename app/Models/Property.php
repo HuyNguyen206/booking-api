@@ -15,7 +15,7 @@ class Property extends Model
           if (auth()->check()) {
               $property->owner_id = auth()->id();
           }
-          if ($property->lat === null && $property->long === null) {
+          if ($property->lat === null && $property->long === null && !app()->environment('testing')) {
               $fullAddress = $property->getFullAddress();
               $result = app('geocoder')->geocode($fullAddress)->get();
               if ($result->isNotEmpty()) {
@@ -34,6 +34,11 @@ class Property extends Model
      public function city()
     {
         return $this->belongsTo(City::class);
+    }
+
+    public function apartments()
+    {
+        return $this->hasMany(Apartment::class);
     }
 
     public function getFullAddress()

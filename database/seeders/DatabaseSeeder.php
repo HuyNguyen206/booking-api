@@ -26,5 +26,7 @@ class DatabaseSeeder extends Seeder
         $this->call(CountrySeeder::class);
         $this->call(CitySeeder::class);
         $this->call(GeoobjectSeeder::class);
+
+//        \App\Models\Apartment::factory(10)->create();
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\City;
 use App\Models\Role;
 use App\Models\User;
 use Tests\TestCase;
@@ -25,12 +26,25 @@ class PropertiesTest extends TestCase
         $simpleRole = Role::query()->where(['name' => 'Simple User'])->first();
         $user = User::factory()->create(['role_id' => $simpleRole->id]);
 
-
         $this->actingAs($user)->getJson(route('properties.index'))->assertForbidden();
     }
 
     public function test_property_owner_can_add_property()
     {
+        $ownerRole = Role::query()->where(['name' => 'Property Owner'])->first();
+        $owner = User::factory()->create(['role_id' => $ownerRole->id]);
 
+        $this->actingAs($owner)->postJson(route('properties.store'), [
+            'name' => 'My property',
+            'city_id' => City::value('id'),
+            'address_street' => 'Street Address 1',
+            'address_postcode' => '12345',
+        ])->assertSuccessful();
+
+        $this->assertDatabaseHas('properties', [
+            'name' => 'My property',
+            'address_street' => 'Street Address 1',
+            'address_postcode' => '12345',
+        ]);
     }
 }

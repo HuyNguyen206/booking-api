@@ -37,4 +37,11 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    public function admin()
+    {
+        return $this->state(function ($attributes) {
+           return ['role_id' => Role::where('name', 'Administrator')->value('id')];
+        });
+    }
 }

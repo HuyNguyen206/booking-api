@@ -4,10 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Staudenmeir\EloquentEagerLimit\HasEagerLimit;
 
-class Property extends Model
+class Property extends Model implements HasMedia
 {
-    use HasFactory;
+    use HasFactory, HasEagerLimit, InteractsWithMedia;
 
     protected static function booted()
     {
@@ -27,6 +31,12 @@ class Property extends Model
       });
     }
 
+    public function registerMediaConversions(Media|null $media = null): void
+    {
+      $this->addMediaConversion('thumbnail')
+      ->width(800);
+    }
+
     public function owner()
     {
         return $this->belongsTo(User::class);
@@ -39,6 +49,11 @@ class Property extends Model
     public function apartments()
     {
         return $this->hasMany(Apartment::class);
+    }
+
+    public function facilities()
+    {
+        return $this->belongsToMany(Facility::class);
     }
 
     public function getFullAddress()

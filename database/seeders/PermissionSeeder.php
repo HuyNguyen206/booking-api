@@ -15,7 +15,8 @@ class PermissionSeeder extends Seeder
     {
         $roleForPermissions = [
             'Property Owner' => ['properties-manage'],
-            'Simple User' => ['bookings-manage']
+            'Simple User' => ['bookings-manage'],
+            'Administrator' => ['properties-manage', 'bookings-manage']
         ];
         $allRoles = Role::all(['id', 'name'])->pluck('id', 'name');
 

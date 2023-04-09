@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBookingRequest;
+use App\Http\Requests\UpdateBookingRequest;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
 use App\Responsable\ResponseSuccess;
@@ -45,6 +46,15 @@ class BookingController extends Controller
     public function store(StoreBookingRequest $request)
     {
         $booking = $request->user()->bookings()->create($request->validated());
+
+        return new ResponseSuccess(BookingResource::make($booking));
+    }
+
+    public function update(UpdateBookingRequest $request, Booking $booking)
+    {
+        abort_if($booking->user_id !== $request->user()->id, 403, 'You are not allow to review other\'bookings');
+
+        $booking->update($request->validated());
 
         return new ResponseSuccess(BookingResource::make($booking));
     }

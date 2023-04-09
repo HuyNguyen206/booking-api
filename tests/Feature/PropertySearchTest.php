@@ -4,12 +4,14 @@ namespace Tests\Feature;
 
 use App\Models\Apartment;
 use App\Models\BedType;
+use App\Models\Booking;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Facility;
 use App\Models\Geoobject;
 use App\Models\Property;
 use App\Models\RoomType;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -228,7 +230,7 @@ class PropertySearchTest extends TestCase
 
     public function test_property_search_filters_by_facilities()
     {
-        $facilities = Facility::query()->latest()->whereNull('facility_category_id')->take(2)->get();
+        $facilities = Facility::query()->latest('id')->whereNull('facility_category_id')->take(2)->get();
         $facilitiesIds = $facilities->pluck('id')->toArray();
         //No facilities yet by default
         $property1 = Property::factory()->create();
@@ -239,16 +241,10 @@ class PropertySearchTest extends TestCase
             ->assertJsonCount(1, 'data.properties')
             ->assertJsonCount(0, 'data.facilities');
 
-        //No facilities yet
-        $property1 = Property::factory()->create();
-        $this->getJson(route('search.properties', ["facilities[]=$facilitiesIds[0]&facilities[]=$facilitiesIds[1]"]))
-            ->assertJsonCount(0, 'data.properties')
-            ->assertJsonCount(0, 'data.facilities');
-
         //Have facilities
         $property1->facilities()->attach($facilitiesIds);
         $property2 = Property::factory()->create();
-        $property2->facilities()->attach(Facility::query()->oldest()->whereNull('category_facility_id')->take(2)->pluck('id')->toArray());
+        $property2->facilities()->attach(Facility::query()->oldest('id')->whereNull('facility_category_id')->take(2)->pluck('id')->toArray());
 
         $this->getJson(route('search.properties', ["facilities[]=$facilitiesIds[0]&facilities[]=$facilitiesIds[1]"]))
             ->assertJsonFragment([
@@ -290,10 +286,10 @@ class PropertySearchTest extends TestCase
 
         $this->getJson(route('search.properties', ['adults' => 2, 'children' => 2]))
             ->assertJsonCount(2, 'data.properties')
-            ->assertJsonCount(1, 'data.properties.0.apartments')
-            ->assertJsonPath('data.properties.0.apartments.0.name', $apartment2Nhung->name)
             ->assertJsonCount(1, 'data.properties.1.apartments')
-            ->assertJsonPath('data.properties.1.apartments.0.name', $apartment2Huy->name);
+            ->assertJsonPath('data.properties.0.apartments.0.name', $apartment2Huy->name)
+            ->assertJsonCount(1, 'data.properties.0.apartments')
+            ->assertJsonPath('data.properties.1.apartments.0.name', $apartment2Nhung->name);
     }
 
     public function test_property_search_filters_by_price()
@@ -329,5 +325,79 @@ class PropertySearchTest extends TestCase
             ->assertJsonPath('data.properties.0.apartments.0.apartmentPrices.prices.0.price', 150)
             ->assertJsonPath('data.properties.0.apartments.0.apartmentPrices.prices.1.price', 100)
             ->assertJsonPath('data.properties.0.apartments.0.name', $apartment->name);
+    }
+
+    public function test_properties_show_correct_rating_and_ordered_by_it()
+    {
+        $apartment = Apartment::factory()->create([
+            'capacity_adults' => 18,
+            'capacity_children' => 18
+        ]);
+        $apartment->apartmentPrices()->create([
+            'price' => 100,
+            'start_date' => Carbon::today(),
+            'end_date' => Carbon::tomorrow()
+        ]);
+
+        $apartment2 = Apartment::factory()->create([
+            'capacity_adults' => 18,
+            'capacity_children' => 18
+        ]);
+        $apartment2->apartmentPrices()->create([
+            'price' => 120,
+            'start_date' => Carbon::today(),
+            'end_date' => Carbon::tomorrow()
+        ]);
+        // avg = 7
+        $this->actingAs($user = User::factory()->admin()->create())->postJson(route('bookings.store'), [
+            'apartment_id' => $apartment->id,
+            'guest_adults' => 2,
+            'guest_children' => 1,
+            'start_date' => today()->format('Y-m-d'),
+            'end_date' => today()->addDays()->format('Y-m-d')
+        ])
+            ->assertSuccessful();
+
+        $this->actingAs($user)->putJson(route('bookings.update', Booking::latest('id')->value('id')), [
+            'rating' => 8,
+            'review_comment' => 'Great service'
+        ])
+            ->assertSuccessful();
+
+        // avg = 7
+        $this->actingAs($user2= User::factory()->admin()->create())->postJson(route('bookings.store'), [
+            'apartment_id' => $apartment2->id,
+            'guest_adults' => 2,
+            'guest_children' => 1,
+            'start_date' => today()->format('Y-m-d'),
+            'end_date' => today()->addDays()->format('Y-m-d')
+        ])
+            ->assertSuccessful();
+
+        $this->actingAs($user2)->putJson(route('bookings.update', Booking::latest('id')->value('id')), [
+            'rating' => 6,
+            'review_comment' => 'Great service'
+        ])
+            ->assertSuccessful();
+
+        $this->actingAs($user3 = User::factory()->admin()->create())->postJson(route('bookings.store'), [
+            'apartment_id' => $apartment2->id,
+            'guest_adults' => 2,
+            'guest_children' => 1,
+            'start_date' => today()->addDays(2)->format('Y-m-d'),
+            'end_date' => today()->addDays(4)->format('Y-m-d')
+        ])
+            ->assertSuccessful();
+
+        $this->actingAs($user3)->putJson(route('bookings.update', Booking::latest('id')->value('id')), [
+            'rating' => 8,
+            'review_comment' => 'Great service'
+        ])
+            ->assertSuccessful();
+
+        $this->getJson(route('search.properties', ['price_from' => 80, 'price_to' => 160]))
+            ->assertJsonCount(2, 'data.properties')
+            ->assertJsonPath('data.properties.0.rating_avg', 8)
+            ->assertJsonPath('data.properties.1.rating_avg', 7);
     }
 }

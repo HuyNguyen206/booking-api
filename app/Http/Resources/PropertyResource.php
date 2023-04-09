@@ -21,7 +21,9 @@ class PropertyResource extends JsonResource
             'lat' => $this->lat,
             'long' => $this->long,
             'apartments' => $this->whenLoaded('apartments', ApartmentResource::collection($this->apartments ?? [])),
-            'photo' => $this->whenLoaded('media', PhotoResource::collection($this->media->sortByDesc('position')))
+            'photo' => $this->whenLoaded('media', PhotoResource::collection($this->media->sortByDesc('position'))),
+            'rating_avg' => round($this->rating_avg, 2),
+            'bookings' => $this->whenLoaded('bookings', BookingResource::collection($this->bookings))
         ];
     }
 }

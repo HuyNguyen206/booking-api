@@ -89,6 +89,7 @@ class Apartment extends Model
     )
     {
         if ($hasCapacity = (isset($conditions['hasCapacity']) && $conditions['hasCapacity'])) {
+
             $query->where('capacity_adults', '>=', $data['adults'])
                 ->where('capacity_children', '>=', $data['children'])
                 ->orderBy('capacity_adults')
@@ -114,8 +115,5 @@ class Apartment extends Model
             });
         }
 
-        if ($hasCapacity && !$hasDateRange && !$hasPrice) {
-            $query->take(1);
-        }
     }
 }

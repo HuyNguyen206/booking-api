@@ -56,6 +56,11 @@ class Property extends Model implements HasMedia
         return $this->belongsToMany(Facility::class);
     }
 
+    public function bookings()
+    {
+        return $this->hasManyThrough(Booking::class, Apartment::class);
+    }
+
     public function getFullAddress()
     {
         return $this->address_street . ', '

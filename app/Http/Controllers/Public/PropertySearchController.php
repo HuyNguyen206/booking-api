@@ -23,8 +23,10 @@ class PropertySearchController extends Controller
                 'apartments.apartmentType',
                 'apartments.rooms.beds.bedType',
                 'apartments.rooms.roomType',
-                'facilities'
+                'facilities',
+                'bookings'
             ])
+            ->withAvg('bookings as rating_avg', 'rating')
             ->when($request->city, function (Builder $builder) use ($request) {
                 $builder->where('city_id', $request->city);
             })
@@ -52,6 +54,10 @@ class PropertySearchController extends Controller
                     $query->withExtraCondition($request->only([
                         'adults', 'children', 'start_date', 'end_date', 'price_from', 'price_to'
                     ]), compact('hasCapacity', 'hasDateRange', 'hasPrice'));
+
+                    if ($hasCapacity && !$hasDateRange && !$hasPrice) {
+                        $query->take(1);
+                    }
                 });
             })
             ->when($request->facilities, function ($query) use ($request) {
@@ -59,7 +65,7 @@ class PropertySearchController extends Controller
                     $query->whereIn('facilities.id', $request->facilities);
                 });
             })
-            ->orderByDesc('properties.id')
+            ->orderByDesc('rating_avg')
             ->get();
         // Use collection
         $facilities = $properties->pluck('facilities')->flatten()

@@ -22,7 +22,7 @@ class ApartmentPriceTest extends TestCase
         ]);
 
         $this->getJson(route('search.properties', ['start_date' => today()->format('Y-m-d'), 'end_date' => today()->format('Y-m-d')]))
-            ->assertJsonPath('data.properties.apartments.apartmentPrices.totalPrice', 100);
+            ->assertJsonPath('data.properties.0.apartments.0.apartmentPrices.totalPrice', 100);
 
     }
 

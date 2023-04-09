@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\ApartmentType;
 use App\Models\Property;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,7 +22,8 @@ class ApartmentFactory extends Factory
             'name' => $this->faker->text(20),
             'capacity_adults' => $this->faker->numberBetween(1, 15),
             'capacity_children' => $this->faker->numberBetween(1, 15),
-            'property_id' => fn() => Property::factory()->create()->id
+            'property_id' => fn() => Property::factory()->create()->id,
+            'apartment_type_id' => fn() => ApartmentType::query()->inRandomOrder()->value('id')
         ];
     }
 }

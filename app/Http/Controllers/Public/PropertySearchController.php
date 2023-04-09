@@ -14,6 +14,9 @@ class PropertySearchController extends Controller
 {
     public function __invoke(Request $request)
     {
+        $hasCapacity = $request->adults && $request->children;
+        $hasDateRange = $request->start_date && $request->end_date;
+        $hasPrice = $request->price_from && $request->price_to;
         $properties = Property::query()
             ->with([
                 'city',
@@ -22,7 +25,7 @@ class PropertySearchController extends Controller
                 'apartments.rooms.roomType',
                 'facilities'
             ])
-            ->when($request->city, function (Builder $builder) use ($request){
+            ->when($request->city, function (Builder $builder) use ($request) {
                 $builder->where('city_id', $request->city);
             })
             ->when($request->country, function (Builder $builder) use ($request) {
@@ -44,24 +47,20 @@ class PropertySearchController extends Controller
                     $query->whereRaw($condition);
                 }
             })
-            ->when($request->adults && $request->children, function (Builder $query) use ($request) {
-                $query->withWhereHas('apartments', function ($query) use ($request) {
-                   $query->where('capacity_adults', '>=', $request->adults)
-                         ->where('capacity_children', '>=', $request->children)
-                         ->orderBy('capacity_adults')
-                         ->orderBy('capacity_children')
-                         ->take(1)
-                   ;
+            ->when($hasCapacity || $hasDateRange || $hasPrice , function (Builder $query) use ($request, $hasCapacity, $hasDateRange, $hasPrice) {
+                $query->withWhereHas('apartments', function ($query) use ($request, $hasCapacity, $hasDateRange, $hasPrice) {
+                    $query->withExtraCondition($request->only([
+                        'adults', 'children', 'start_date', 'end_date', 'price_from', 'price_to'
+                    ]), compact('hasCapacity', 'hasDateRange', 'hasPrice'));
                 });
             })
             ->when($request->facilities, function ($query) use ($request) {
                 $query->whereHas('facilities', function ($query) use ($request) {
-                   $query->whereIn('facilities.id', $request->facilities);
+                    $query->whereIn('facilities.id', $request->facilities);
                 });
             })
             ->orderByDesc('properties.id')
             ->get();
-
         // Use collection
         $facilities = $properties->pluck('facilities')->flatten()
             ->groupBy('name')
@@ -81,7 +80,8 @@ class PropertySearchController extends Controller
 
         return new ResponseSuccess([
             'properties' => PropertyResource::collection($properties),
-            'facilities'=> $facilities
+            'facilities' => $facilities
         ]);
     }
+
 }

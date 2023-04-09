@@ -14,7 +14,8 @@ class ApartmentResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return [
+        $data = [
+            'id' => $this->id,
             'name' => $this->name,
             'type' => $this->apartmentType?->name,
             'capacity_adults' => $this->capacity_adults,
@@ -22,7 +23,20 @@ class ApartmentResource extends JsonResource
             'size' => $this->size,
             'beds_list' => $this->getBedsInfo(),
             'bathrooms' => $this->bathrooms,
-            'facilities' => $this->whenLoaded('facilities', $this->facilities)
+            'facilities' => $this->whenLoaded('facilities', $this->facilities),
         ];
+
+        if ($this->relationLoaded('apartmentPrices')) {
+            return $data +
+                [
+                    'apartmentPrices' => [
+                        'totalPrice' => $this->apartmentPrices->sum('totalPrice'),
+                        'prices' => ApartmentPriceResource::collection($this->apartmentPrices)
+                         ]
+
+                ];
+        }
+
+        return $data;
     }
 }

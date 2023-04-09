@@ -16,10 +16,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function (){
   Route::apiResource('owner/properties', \App\Http\Controllers\Owner\PropertyController::class)->only(['index', 'store']);
-  Route::apiResource('user/bookings', \App\Http\Controllers\User\BookingController::class)->only('index');
+  Route::apiResource('user/bookings', \App\Http\Controllers\User\BookingController::class);
   Route::apiResource('owner/image-upload/properties', \App\Http\Controllers\Owner\PropertyPhotoController::class)
       ->only(['store'])
-      ->name('store', 'image-upload.properties.show');
+      ->name('store', 'image-upload.properties.store');
+  Route::post('owner/properties/photos/{photo}', [\App\Http\Controllers\Owner\PropertyPhotoController::class, 'changePositionPhoto'])
+      ->name('owner.properties.photos.change-order');
 });
 Route::get('search', Public\PropertySearchController::class)->name('search.properties');
 Route::get('properties/{property}', Public\PropertyController::class)->name('public.properties.show');

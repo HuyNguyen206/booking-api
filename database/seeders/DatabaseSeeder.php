@@ -38,6 +38,10 @@ class DatabaseSeeder extends Seeder
         Facility::create(['name' => 'Pets allowed']);
         Facility::create(['name' => 'Swimming pool']);
 
-//        \App\Models\Apartment::factory(10)->create();
+//        Property::factory(5)->create();
+//
+//        \App\Models\Apartment::factory(5)->create([
+//            'property_id' => Property::query()->inRandomOrder()->value('id')
+//        ]);
     }
 }

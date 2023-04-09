@@ -61,7 +61,7 @@ class PropertiesTest extends TestCase
          */
         $admin = User::factory()->admin()->create();
         $property = Property::factory()->create(['owner_id' => $admin->id]);
-        $res = $this->actingAs($admin)->postJson(route('image-upload.properties.show'), [
+        $res = $this->actingAs($admin)->postJson(route('image-upload.properties.store'), [
             'photo' => UploadedFile::fake()->image('photo.png'),
             'property_id' => $property->id
         ]);
@@ -72,5 +72,35 @@ class PropertiesTest extends TestCase
 
         Storage::disk('test')->assertExists($photo->getPathRelativeToRoot());
         Storage::disk('test')->assertExists($photo->getPathRelativeToRoot('thumbnail'));
+    }
+
+    public function test_property_owner_can_reorder_photos_in_property()
+    {
+        $this->withoutExceptionHandling();
+        Storage::fake('test');
+        config(['media-library.disk_name' => 'test']);
+        /**
+         * @var Property $property
+         */
+        $admin = User::factory()->admin()->create();
+        $property = Property::factory()->create(['owner_id' => $admin->id]);
+        $this->actingAs($admin)->postJson(route('image-upload.properties.store'), [
+            'photo' => UploadedFile::fake()->image('photo.png'),
+            'property_id' => $property->id
+        ]);
+
+        $this->actingAs($admin)->postJson(route('image-upload.properties.store'), [
+            'photo' => UploadedFile::fake()->image('photo2.png'),
+            'property_id' => $property->id
+        ]);
+
+        $firstPhoto = $property->media()->where('file_name', 'photo.png')->first();
+        $secondPhoto = $property->media()->where('file_name', 'photo2.png')->first();
+        $this->assertEquals(1, $firstPhoto->position);
+        $this->assertEquals(2, $secondPhoto->position);
+
+        $this->actingAs($admin)->postJson(route('owner.properties.photos.change-order', $firstPhoto->id), ['position' => 2]);
+        $this->assertEquals(2, $firstPhoto->fresh()->position);
+        $this->assertEquals(1, $secondPhoto->fresh()->position);
     }
 }

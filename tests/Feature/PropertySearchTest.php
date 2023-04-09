@@ -10,6 +10,7 @@ use App\Models\Facility;
 use App\Models\Geoobject;
 use App\Models\Property;
 use App\Models\RoomType;
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -293,5 +294,40 @@ class PropertySearchTest extends TestCase
             ->assertJsonPath('data.properties.0.apartments.0.name', $apartment2Nhung->name)
             ->assertJsonCount(1, 'data.properties.1.apartments')
             ->assertJsonPath('data.properties.1.apartments.0.name', $apartment2Huy->name);
+    }
+
+    public function test_property_search_filters_by_price()
+    {
+        $apartment = Apartment::factory()->create();
+        $apartment->apartmentPrices()->create([
+            'price' => 100,
+            'start_date' => Carbon::today(),
+            'end_date' => Carbon::tomorrow()
+        ]);
+        $apartment->apartmentPrices()->create([
+            'price' => 150,
+            'start_date' => Carbon::today(),
+            'end_date' => Carbon::tomorrow()
+        ]);
+        $apartment->apartmentPrices()->create([
+            'price' => 300,
+            'start_date' => Carbon::today(),
+            'end_date' => Carbon::tomorrow()
+        ]);
+
+        $apartment2 = Apartment::factory()->create();
+        $apartment2->apartmentPrices()->create([
+            'price' => 170,
+            'start_date' => Carbon::today(),
+            'end_date' => Carbon::tomorrow()
+        ]);
+
+        $this->getJson(route('search.properties', ['price_from' => 80, 'price_to' => 160]))
+            ->assertJsonCount(1, 'data.properties')
+            ->assertJsonCount(1, 'data.properties.0.apartments')
+            ->assertJsonCount(2, 'data.properties.0.apartments.0.apartmentPrices.prices')
+            ->assertJsonPath('data.properties.0.apartments.0.apartmentPrices.prices.0.price', 150)
+            ->assertJsonPath('data.properties.0.apartments.0.apartmentPrices.prices.1.price', 100)
+            ->assertJsonPath('data.properties.0.apartments.0.name', $apartment->name);
     }
 }

@@ -20,7 +20,8 @@ class PropertyResource extends JsonResource
             'address' => $this->getFullAddress(),
             'lat' => $this->lat,
             'long' => $this->long,
-            'apartments' => $this->whenLoaded('apartments', ApartmentResource::collection($this->apartments ?? []))
+            'apartments' => $this->whenLoaded('apartments', ApartmentResource::collection($this->apartments ?? [])),
+            'photo' => $this->whenLoaded('media', PhotoResource::collection($this->media->sortByDesc('position')))
         ];
     }
 }

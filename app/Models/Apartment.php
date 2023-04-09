@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -29,6 +30,16 @@ class Apartment extends Model
     public function facilities()
     {
         return $this->belongsToMany(Facility::class);
+    }
+
+    public function apartmentPrices()
+    {
+        return $this->hasMany(ApartmentPrice::class);
+    }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
     }
 
     public function getBedsInfo()
@@ -65,5 +76,46 @@ class Apartment extends Model
                 $bedType->name = "1 $bedType->name";
                 return $bedType;
             })->sortByDesc('id')->implode('name', ', '));
+    }
+
+    public function scopeWithExtraCondition(
+        Builder $query,
+        $data = ['capacity_adults', 'capacity_children', 'start_date', 'end_date', 'price_from', 'price_to'],
+        $conditions = [
+            'hasCapacity' => false,
+            'hasDateRange' => false,
+            'hasPrice' => false
+        ]
+    )
+    {
+        if ($hasCapacity = (isset($conditions['hasCapacity']) && $conditions['hasCapacity'])) {
+            $query->where('capacity_adults', '>=', $data['adults'])
+                ->where('capacity_children', '>=', $data['children'])
+                ->orderBy('capacity_adults')
+                ->orderBy('capacity_children');
+        }
+
+        if ($hasDateRange = (isset($conditions['hasDateRange']) && $conditions['hasDateRange'])) {
+            $query->withWhereHas('apartmentPrices', function ($query) use ($data) {
+//                                 ->selectRaw('price * ? as price_with_tax', [1.0825])
+                $query->select('*')
+                    ->selectRaw("(datediff(apartment_prices.end_date, apartment_prices.start_date) + 1) * apartment_prices.price as totalPrice")
+                    ->whereDate('start_date', '>=', $data['start_date'])
+                    ->whereDate('end_date', '<=', $data['end_date']);
+            });
+        }
+
+        if ($hasPrice = (isset($conditions['hasPrice']) && $conditions['hasPrice'])) {
+            $query->withWhereHas('apartmentPrices', function ($query) use ($data) {
+//                                 ->selectRaw('price * ? as price_with_tax', [1.0825])
+                $query->where('price', '>=', $data['price_from'])
+                      ->where('price', '<=', $data['price_to'])
+                      ->orderByDesc('apartment_prices.id');
+            });
+        }
+
+        if ($hasCapacity && !$hasDateRange && !$hasPrice) {
+            $query->take(1);
+        }
     }
 }
